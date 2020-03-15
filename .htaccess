@@ -1,4 +1,0 @@
-#Redirect everything back to the index file
-RewriteEngine on
-RewriteCond %{REQUEST_URI} !^/index.php
-RewriteRule ^.+$ /index.php [L]
