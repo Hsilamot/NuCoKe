@@ -11,14 +11,17 @@
  * @license http://creativecommons.org/licenses/by-nc-sa/3.0/
  * @version 4.0.1
  */
+require_once('vendor/autoload.php');
 spl_autoload_register(function($className) {
-	$className = str_replace('Tomalish\\','src/',$className);
+	$className = str_replace('Tomalish\\','',$className);
 	if (file_exists($className .'.php')) {
 		require_once($className .'.php');
 	}
 });
+
 #require_once('src/NuCoKe.php');
 use Tomalish\NuCoKe;
+use Tomalish\Laira;
 
 $nucoke = new NuCoKe(
 						array(
@@ -35,10 +38,15 @@ $nucoke = new NuCoKe(
 $result = $nucoke->db_add('tomalish',array(
 												 'socket'		=> '/var/lib/mysql/mysql.sock'
 												,'user'			=> 'tomalish_user'
-												,'pass'			=> 'nMBt10qWEI4qRqBvrIX'
+												,'pass'			=> 'nMBt10qWEI4qRqBvrI'
 												,'database'		=> 'tomalish_db'
 												,'log_queries'	=> true /* log SQL Queries */
 											));
+
+$laira = new Laira();
+$laira->version = array(1,0,5);
+
+$laira->end();
 
 $result = $nucoke->sql('SELECT NOW() as `ahora`');
 echo 'No debería ser fatal';
