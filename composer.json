@@ -24,11 +24,12 @@
 		}
 	],
 	"require" : {
-		"php" : "^7.3"
+		"php" : "^7.3",
+        "firebase/php-jwt": "^5.2"
 	},
 	"autoload": {
 		"psr-4": {
-			"Tomalish\\": "src/"
+			"Tomalish\\": "/"
 		}
 	}
 }
