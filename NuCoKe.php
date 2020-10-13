@@ -21,6 +21,7 @@
  * @version 4.0.1
  */
 namespace Tomalish;
+use Tomalish\Database;
 
 class NuCoKe {
 	/**

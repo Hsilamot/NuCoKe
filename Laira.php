@@ -64,7 +64,7 @@ class Laira {
 		$this->payload		= array();		/* Payload Contents */
 		return true;
 	}
-	public function msg($type='info',$msg='') {
+	public function addMessage($type='info',$msg='') {
 		$this->messages[] = array('type'=>$type,'message'=>$msg);
 		return true;
 	}
