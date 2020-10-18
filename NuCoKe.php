@@ -208,6 +208,56 @@ class NuCoKe {
 		return true;
 	}
 	/**
+	 * will return the host to which the request was sent
+	 * @access public
+	 * @version 1.0.1
+	 * @return string returns the host (either FQDN or IP)
+	 */
+	public static function host_get() {
+		$host = '::1';
+		if (php_sapi_name()=='cli') {
+			if (isset($_SERVER['HOSTNAME'])) {
+				$host = $_SERVER['HOSTNAME'];
+			} elseif (isset($_SERVER['SSH_CONNECTION'])) {
+				$host = explode(' ',$_SERVER['SSH_CONNECTION']);
+				if (count($host)>2) {
+					$host = $host[2];
+				}
+			}
+		} else {
+			if (isset($_SERVER['HTTP_HOST'])) {
+				$host = $_SERVER['HTTP_HOST'];
+			} elseif (isset($_SERVER['SERVER_NAME'])) {
+				$host = $_SERVER['SERVER_NAME'];
+			} elseif (isset($_SERVER['SERVER_ADDR'])) {
+				$host = $_SERVER['SERVER_ADDR'];
+			}
+		}
+		return $host;
+	}
+	/**
+	 * will return the integer of the port to which the connection was stablished
+	 * @access public
+	 * @version 1.0.1
+	 * @return int port number
+	 */
+	public static function host_port_get() {
+		$port = 0;
+		if (php_sapi_name()=='cli') {
+			if (isset($_SERVER['SSH_CONNECTION'])) {
+				$port = explode(' ',$_SERVER['SSH_CONNECTION']);
+				if (count($port)>3) {
+					$port = $port[3];
+				}
+			}
+		} else {
+			if (isset($_SERVER['SERVER_PORT'])) {
+				$port = $_SERVER['SERVER_PORT'];
+			}
+		}
+		return $port;
+	}
+	/**
 	 * will decode a 16-byte binary ip into normal string
 	 * 2019-08-22 added IPv6 Compatible encoding
 	 * @access public
@@ -241,7 +291,7 @@ class NuCoKe {
 	 * @version 1.0.13
 	 * @return string remote address
 	 */
-	public function ip_get() {
+	public static function ip_get() {
 		$ip = '0000:0000:0000:0000:0000:0000:0000:0001';
 		if (php_sapi_name()=='cli') {
 			if (isset($_SERVER['SSH_CLIENT'])) {
@@ -253,7 +303,21 @@ class NuCoKe {
 				$ip = $_SERVER['REMOTE_ADDR'];
 			}
 		}
+		$ip = inet_pton($ip);
+		if (strlen($ip)<16&&strlen($ip)==4) {
+			$ip = str_repeat(chr(0), 10).str_repeat(chr(255), 2).$ip;
+		}
+		$ip = inet_ntop($ip);
 		return $ip;
+	}
+	/**
+	 * return the working dir path
+	 * @access public
+	 * @version 1.0.1
+	 * @return string with the working dir path
+	 */
+	public function path_get() {
+		return $this->path;
 	}
 	/**
 	 * Will execute the $query on the specified $database or the default $database if not specified
@@ -316,5 +380,93 @@ class NuCoKe {
 		$end = str_replace(chr(92).chr(39),chr(92).chr(92).chr(39),$string);
 		$end = str_replace(chr(39),chr(92).chr(39),$end);
 		return $end;
+	}
+	/**
+	 * will get the current url
+	 * @access public
+	 * @version 1.0.5
+	 * @param string $string part of the query to vaccine
+	 * @return string with vaccioned string
+	 */
+	public static function url_get($params=array()) {
+		$unparsed_url = '';
+
+		$default_params = array();
+		$default_params['host'] = NuCoKe::host_get();
+		$default_params['port'] = NuCoKe::host_port_get();
+
+		if (php_sapi_name()=='cli') {
+			$default_params['scheme'] = 'ssh';
+			if (isset($_SERVER['PWD'])) {
+				$default_params['path'] = $_SERVER['PWD'];
+				if (isset($_SERVER['argv'])&&isset($_SERVER['argv'][0])) {
+					$default_params['path'] .= '/'.$_SERVER['argv'][0];
+				}
+			}
+			if (isset($_SERVER['argv'])&&count($_SERVER['argv'])>1) {
+				$argv = $_SERVER['argv'];
+				array_shift($argv);
+				$default_params['query'] = http_build_query($argv);
+			}
+		} else {
+			if (isset($_SERVER['REQUEST_SCHEME'])) { $default_params['scheme'] = $_SERVER['REQUEST_SCHEME']; } else { $default_params['scheme'] = 'unknown'; }
+			if (isset($_SERVER['REQUEST_URI'])) {
+				$extract = parse_url('https://0.0.0.0'.$_SERVER['REQUEST_URI']);
+				if (isset($extract['path'])) {
+					$default_params['path'] = $extract['path'];
+				}
+				if (isset($extract['query'])) {
+					$default_params['query'] = $extract['query'];
+				}
+				if (isset($extract['fragment'])) {
+					$default_params['fragment'] = $extract['fragment'];
+				}
+			}
+		}
+
+		$params = array_merge(
+			$default_params,
+			$params
+		);
+
+		if (isset($params['scheme'])) {
+			$unparsed_url .= $params['scheme'].'://';
+		}
+
+		if (isset($params['user'])) {
+			$unparsed_url .= $params['user'];
+			if (isset($params['pass'])) {
+				$unparsed_url .= ':'.$params['pass'];
+			}
+			$unparsed_url .= '@';
+		}
+
+		if (isset($params['host'])) {
+			$unparsed_url .= $params['host'];
+		}
+
+		if (isset($params['port'])) {
+			if (!isset($params['scheme']) //si no hay scheme ponemos el puerto
+				||$params['scheme']=='http'&&$params['port']!=80 // solo si no es 80 y viene por http
+				||$params['scheme']=='https'&&$params['port']!=443 // solo si no es 443 y viene por https
+				||$params['scheme']!='http'&&$params['scheme']!='https'
+				) {
+				$unparsed_url .= ':'.$params['port'];
+			}
+		}
+
+		if (isset($params['path'])) {
+			$unparsed_url .= $params['path'];
+		}
+
+		if (isset($params['query'])) {
+			$unparsed_url .= '?'.$params['query'];
+		}
+
+		if (isset($params['fragment'])) {
+			$unparsed_url .= '#'.$params['fragment'];
+		}
+
+		return $unparsed_url;
 	}
 }

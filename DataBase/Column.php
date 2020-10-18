@@ -60,6 +60,8 @@ class Column {
 							$this->type = 'binary'; break;
 						case 'tinytext':
 							$this->type = 'tinytext'; break;
+						case 'text':
+							$this->type = 'text'; break;
 						default:
 							trigger_error('Unimplemented data type: '.$value,E_USER_NOTICE);
 					}
