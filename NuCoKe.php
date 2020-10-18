@@ -151,7 +151,7 @@ class NuCoKe {
 	 * @version 1.0.2
 	 * @return string remote address
 	 */
-	public function agent_get() {
+	public static function agent_get() {
 		if (php_sapi_name()=='cli') {
 			$agent = '';
 			if (isset($_SERVER['USER'])) { $agent .= $_SERVER['USER'].'@'; } else { $agent .= 'unknown@'; }
@@ -278,6 +278,11 @@ class NuCoKe {
 	 */
 	public static function ip_encode($ip) {
 		$pack = inet_pton($ip);
+		if (strlen($pack)<16&&strlen($pack)==4) {
+			$pack = str_repeat(chr(0), 10).str_repeat(chr(255), 2).$pack;
+		}
+		return $pack;
+		// código viejo
 		$pack = bin2hex($pack);
 		if (strlen($pack)==32) {
 			return '0x'.$pack;
@@ -303,11 +308,7 @@ class NuCoKe {
 				$ip = $_SERVER['REMOTE_ADDR'];
 			}
 		}
-		$ip = inet_pton($ip);
-		if (strlen($ip)<16&&strlen($ip)==4) {
-			$ip = str_repeat(chr(0), 10).str_repeat(chr(255), 2).$ip;
-		}
-		$ip = inet_ntop($ip);
+		$ip = inet_ntop(NuCoKe::ip_encode($ip));
 		return $ip;
 	}
 	/**

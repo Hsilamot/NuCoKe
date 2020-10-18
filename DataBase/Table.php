@@ -28,6 +28,8 @@ class Table {
 	public $charset;
 	public $comment;
 	public $columns;
+	public $log_table_name;
+	public $log_table_primarykey;
 	public $primary_keys;
 	
 	public function __construct() {

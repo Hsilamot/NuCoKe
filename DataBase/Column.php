@@ -50,25 +50,24 @@ class Column {
 			switch ($name) {
 				case 'type':
 					switch ($value) {
-						case 'int':
-							$this->type = 'int'; break;
-						case 'varchar':
-							$this->type = 'varchar'; break;
-						case 'datetime':
-							$this->type = 'datetime'; break;
-						case 'binary':
-							$this->type = 'binary'; break;
-						case 'tinytext':
-							$this->type = 'tinytext'; break;
-						case 'text':
-							$this->type = 'text'; break;
-						default:
-							trigger_error('Unimplemented data type: '.$value,E_USER_NOTICE);
+						case 'tinyint': $this->type = 'tinyint'; break;
+						case 'mediumint': $this->type = 'mediumint'; break;
+						case 'int': $this->type = 'int'; break;
+						case 'bigint': $this->type = 'bigint'; break;
+						case 'varchar': $this->type = 'varchar'; break;
+						case 'datetime': $this->type = 'datetime'; break;
+						case 'binary': $this->type = 'binary'; break;
+						case 'tinytext': $this->type = 'tinytext'; break;
+						case 'text': $this->type = 'text'; break;
+						default: trigger_error('Unimplemented data type: '.$value,E_USER_NOTICE);
 					}
 					break;
 				case 'length':
 					switch ($this->type) {
+						case 'tinyint':
+						case 'mediumint':
 						case 'int':
+						case 'bigint':
 						case 'varchar':
 						case 'binary':
 							$this->length = intval($value);
