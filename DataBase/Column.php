@@ -30,6 +30,7 @@ class Column {
 	private $null;
 	private $default;
 	private $comment;
+	private $collation;
 	private $autoincrement;
 	
 	public function __construct() {
@@ -40,6 +41,7 @@ class Column {
 		$this->null = true;
 		$this->default = '';
 		$this->comment = 'Default Comment';
+		$this->collation = 'utf8_general_ci';
 		$this->autoincrement = false;
 	}
 
@@ -102,6 +104,9 @@ class Column {
 					break;
 				case 'autoincrement':
 					$this->autoincrement = $value;
+					break;
+				case 'collation':
+					$this->collation = $value;
 					break;
 				default:
 					trigger_error('Unimplemented propety '.$name,E_USER_NOTICE);
