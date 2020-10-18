@@ -312,6 +312,38 @@ class NuCoKe {
 		return $ip;
 	}
 	/**
+	 * returns the request method
+	 * @access public
+	 * @version 1.0.1
+	 * @return string with the request method
+	 */
+	public static function method_get() {
+		$method = 'GET';
+		$method_check = $method;
+		if (php_sapi_name()=='cli') {
+			if (isset($_SERVER['argv'])&&count($_SERVER['argv'])>1) {
+				$method_check = $_SERVER['argv'][1];
+			}
+		} else {
+			if (isset($_SERVER['REQUEST_METHOD'])) {
+				$method_check = $_SERVER['REQUEST_METHOD'];
+			}
+		}
+		switch (strtoupper($method_check)) {
+			case     'GET': $method = 'GET'; break;
+			case    'HEAD': $method = 'HEAD'; break;
+			case    'POST': $method = 'POST'; break;
+			case     'PUT': $method = 'PUT'; break;
+			case  'DELETE': $method = 'DELETE'; break;
+			case 'CONNECT': $method = 'CONNECT'; break;
+			case 'OPTIONS': $method = 'OPTIONS'; break;
+			case   'TRACE': $method = 'TRACE'; break;
+			case    'PATH': $method = 'PATH'; break;
+			default: $method = 'GET'; break;
+		}
+		return $method;
+	}
+	/**
 	 * return the working dir path
 	 * @access public
 	 * @version 1.0.1

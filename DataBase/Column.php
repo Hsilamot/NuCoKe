@@ -59,6 +59,7 @@ class Column {
 						case 'binary': $this->type = 'binary'; break;
 						case 'tinytext': $this->type = 'tinytext'; break;
 						case 'text': $this->type = 'text'; break;
+						case 'set': $this->type = 'set'; break;
 						default: trigger_error('Unimplemented data type: '.$value,E_USER_NOTICE);
 					}
 					break;
@@ -71,6 +72,14 @@ class Column {
 						case 'varchar':
 						case 'binary':
 							$this->length = intval($value);
+							break;
+						case 'set':
+							if (!is_array($value)) {
+								trigger_error('Incorrect value, expecting array but got '.var_export($value,true),E_USER_NOTICE);
+								return false;
+							} else {
+								$this->length = $value;
+							}
 							break;
 						default:
 							trigger_error('Unimplemented length type: '.$this->type,E_USER_NOTICE);
