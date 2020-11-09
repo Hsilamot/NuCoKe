@@ -110,42 +110,20 @@ class Record implements \JsonSerializable {
 	public function save() {
 		if (is_object($this->table)&&count($this->table->primary_keys)>0) {
 			if (count($this->data_original)>0) {
-				$sql  = 'UPDATE `'.$this->table->name.'`';
+				$sql  = 'UPDATE `'.$this->table->name.'` t';
 				$toupdate = array();
-				$columns = array();
-				foreach ($this->table->columns as $name => $column) {
-					$columns[] = '`'.$name.'`';
-					if (isset($this->data[$name])&&$this->data[$name]!=$this->data_original[$name]) {
-						if (method_exists($this,'column_save_'.$name)) {
-							$toupdate[] = '`'.$name.'` = '.$this->sql_sanitize($name,call_user_func(array($this,'column_save_'.$name),$this->data[$name]));
-						} else {
-							$toupdate[] = '`'.$name.'` = '.$this->sql_sanitize($name,$this->data[$name]);
-						}
-					}
-				}
-				$sql .= ' SET '.implode(', ',$toupdate);
-				$sql .= ' WHERE';
-				$where_clause = array();
-				foreach ($this->table->primary_keys as $primary_key) {
-					$where_clause[] = ' `'.$primary_key.'` = '.$this->sql_sanitize($primary_key,$this->data[$primary_key]);
-				}
-				$sql .= implode(' AND ',$where_clause);
-				$sql .= ' LIMIT 1;';
-				if (count($toupdate)==0) {
-					return true;
-				}
 				if (isset($this->table->log_table_name)&&strlen($this->table->log_table_name)>0) {
 					$sql_log  = 'INSERT INTO `'.$this->table->log_table_name.'`';
 					$sql_log .= ' (';
 					$sql_log .= '`'.$this->table->log_table_primarykey.'`';
-					foreach ($columns as $column) {
-						$sql_log .= ','.$column;
+					foreach ($this->table->columns as $name => $column) {
+						$sql_log .= ',`'.$name.'`';
 					}
 					$sql_log .= ')';
 					$sql_log .= ' SELECT';
 					$sql_log .= ' logid.`'.$this->table->log_table_primarykey.'`';
-					foreach ($columns as $column) {
-						$sql_log .= ',t.'.$column;
+					foreach ($this->table->columns as $name => $column) {
+						$sql_log .= ',t.`'.$name.'`';
 					}
 					$sql_log .= ' FROM `'.$this->table->name.'` t';
 					$sql_log .= ' LEFT JOIN (';
@@ -165,6 +143,42 @@ class Record implements \JsonSerializable {
 					}
 					$sql_log .= implode(' AND ',$where_clause);
 					$this->nucoke->sql($sql_log); //save the snapshot
+					if (isset($this->table->log_name_current_log)&&strlen($this->table->log_name_current_log)>0) {
+						$prepare  = 't.`'.$this->table->log_name_current_log.'` = (';
+						$prepare .= 'SELECT';
+						$prepare .= ' log.`'.$this->table->log_table_primarykey.'`';
+						$prepare .= ' FROM `'.$this->table->log_table_name.'` log';
+						$prepare .= ' WHERE';
+						$where_clause = array();
+						foreach ($this->table->primary_keys as $primary_key) {
+							$where_clause[] = ' log.`'.$primary_key.'` = '.$this->sql_sanitize($primary_key,$this->data[$primary_key]);
+						}
+						$prepare .= implode(' AND',$where_clause);
+						$prepare .= ' ORDER BY log.`'.$this->table->log_table_primarykey.'` DESC';
+						$prepare .= ' LIMIT 1';
+						$prepare .= ')';
+						$toupdate[] = $prepare;
+					}
+				}
+				foreach ($this->table->columns as $name => $column) {
+					if (isset($this->data[$name])&&$this->data[$name]!=$this->data_original[$name]) {
+						if (method_exists($this,'column_save_'.$name)) {
+							$toupdate[] = 't.`'.$name.'` = '.$this->sql_sanitize($name,call_user_func(array($this,'column_save_'.$name),$this->data[$name]));
+						} else {
+							$toupdate[] = 't.`'.$name.'` = '.$this->sql_sanitize($name,$this->data[$name]);
+						}
+					}
+				}
+				$sql .= ' SET '.implode(', ',$toupdate);
+				$sql .= ' WHERE';
+				$where_clause = array();
+				foreach ($this->table->primary_keys as $primary_key) {
+					$where_clause[] = ' t.`'.$primary_key.'` = '.$this->sql_sanitize($primary_key,$this->data[$primary_key]);
+				}
+				$sql .= implode(' AND',$where_clause);
+				$sql .= ' LIMIT 1;';
+				if (count($toupdate)==0) {
+					return false;
 				}
 			} else {
 				$sql  = 'INSERT INTO `'.$this->table->name.'`';
@@ -172,8 +186,13 @@ class Record implements \JsonSerializable {
 				$values = array();
 				foreach ($this->table->columns as $name => $column) {
 					if (isset($this->data[$name])) {
-						$fields[] = '`'.$name.'`';
-						$values[] = $this->sql_sanitize($name,$this->data[$name]);
+						if (method_exists($this,'column_save_'.$name)) {
+							$fields[] = '`'.$name.'`';
+							$values[] = $this->sql_sanitize($name,call_user_func(array($this,'column_save_'.$name),$this->data[$name]));
+						} else {
+							$fields[] = '`'.$name.'`';
+							$values[] = $this->sql_sanitize($name,$this->data[$name]);
+						}
 					}
 				}
 				$sql .= ' ('.implode(', ',$fields).') VALUES';

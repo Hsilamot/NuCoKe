@@ -306,7 +306,11 @@ class Database {
 						switch ($column_type[$i]) {
 							case 'LONG':
 							case 'TINY':
-								$row[$name] = intval($value);
+								if ($value!==NULL) {
+									$row[$name] = intval($value);
+								} else {
+									$row[$name] = NULL;
+								}
 								break;
 							case 'VAR_STRING':
 							case 'STRING':

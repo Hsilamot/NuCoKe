@@ -30,6 +30,7 @@ class Table {
 	public $columns;
 	public $log_table_name;
 	public $log_table_primarykey;
+	public $log_name_current_log;
 	public $primary_keys;
 	
 	public function __construct() {
