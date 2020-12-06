@@ -82,14 +82,78 @@ class Record implements \JsonSerializable {
 	// 	return $this->nucoke->ip_decode($data);
 	// }
 	/**
+	 * This function will return a list with general searches.
+	 * @access public
+	 * @version 1.0.1
+	 * @param object PDOResult object
+	 * @return bool success state
+	 */
+	public function list($parameters=array()) {
+		$options = array();
+		$options['columns'] = array('t.*');
+		$options['filters'] = array();
+		$options['order'] = array();
+		$options['page'] = 1;
+		$options['limit'] = 100;
+		foreach ($options as $name => $value) {
+			if (isset($parameters[$name])) {
+				$options[$name] = $value;
+			}
+		}
+		$sql  = 'SELECT '.implode(',',$options['columns']).'';
+		$sql .= ' FROM `'.$this->table->name.'` t';
+		$result = $this->nucoke->sql($sql);
+		$return = array();
+		foreach ($result as $preobject) {
+			$myself = get_called_class();
+			$newObject = new $myself(false,false,json_encode($preobject));
+			$return[] = $newObject;
+		}
+		return $return;
+	}
+	/**
+	 * This will load the data trying to use the default key
+	 * @access public
+	 * @version 1.0.1
+	 * @return bool success state
+	 */
+	protected function load($primary=array()) {
+		$nucoke = &$this->nucoke;
+		$columns = array();
+		foreach ($this->table->columns as $name => $column) {
+			$columns[] = 't.`'.$name.'`';
+		}
+		$where_clause = array();
+		foreach ($this->table->primary_keys as $primary_key) {
+			$where_clause[] = ' t.`'.$primary_key.'` = '.$this->sql_sanitize($primary_key,$primary[$primary_key]);
+		}
+		$sql  = 'SELECT ';
+		$sql .= implode(',',$columns);
+		$sql .= ' FROM `'.$this->table->name.'` t';
+		$sql .= ' WHERE ';
+		$sql .= implode(' AND',$where_clause);
+		$sql .= ' LIMIT 1;';
+		$result = $nucoke->sql($sql);
+		if (count($result)>0) {
+			$this->loadData($result);
+		} else {
+			throw new \Exception('Could not find the associated data');
+		}
+		return true;
+	}
+	/**
 	 * This function will load the data from a PDOResult object
 	 * @access public
 	 * @version 1.0.1
 	 * @param object PDOResult object
 	 * @return bool success state
 	 */
-	protected function loadData($PDOResult) {
-		$result = $PDOResult[0];
+	protected function loadData($PDOResult,$isJSON=false) {
+		if ($isJSON==false) {
+			$result = $PDOResult[0];
+		} else {
+			$result = json_decode($PDOResult);
+		}
 		$this->data = array();
 		foreach ($result as $name => $value) {
 			if (method_exists($this,'column_load_'.$name)) {
@@ -98,6 +162,41 @@ class Record implements \JsonSerializable {
 				$this->data[$name] = $value;
 			}
 			$this->data_original[$name] = $this->data[$name];
+		}
+		return true;
+	}
+	/**
+	 * This will load default data in case there is no such data already loaded
+	 * @access public
+	 * @version 1.0.1
+	 * @return bool success state
+	 */
+	protected function loadDefaultData() {
+		/* we verify if we have a table definition and if so load the default values into the object */
+		if (isset($this->table)&&isset($this->table->columns)) {
+			foreach ($this->table->columns as $name => $column) {
+				if (!isset($this->data[$name])) {
+					if (isset($column->null)&&$column->null==true) {
+						if (isset($column->default)&&$column->default=='NULL') {
+							$value = null;
+						} else {
+							$value = null;
+						}
+					} else {
+						if (isset($column->default)) {
+							$value = $column->default;
+						} else {
+							$value = null;
+						}
+					}
+					if (method_exists($this,'column_load_'.$name)) {
+						$this->data[$name] = call_user_func(array($this,'column_load_'.$name),$value);
+					} else {
+						$this->data[$name] = $value;
+					}
+					$this->data_original[$name] = $this->data[$name];
+				}
+			}
 		}
 		return true;
 	}
