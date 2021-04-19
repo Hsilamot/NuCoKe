@@ -305,6 +305,7 @@ class Database {
 					$i = 0;
 					foreach ($rows as $name => $value) {
 						switch ($column_type[$i]) {
+							case 'TINY':
 							case 'LONG':
 								$row[$name] = intval($value);
 								break;

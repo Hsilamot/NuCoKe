@@ -50,6 +50,8 @@ class Column {
 			switch ($name) {
 				case 'type':
 					switch ($value) {
+						case 'tinyint':
+							$this->type = 'tinyint'; break;
 						case 'int':
 							$this->type = 'int'; break;
 						case 'varchar':
@@ -60,6 +62,8 @@ class Column {
 							$this->type = 'binary'; break;
 						case 'tinytext':
 							$this->type = 'tinytext'; break;
+						case 'set':
+							$this->type = 'set'; break;
 						case 'text':
 							$this->type = 'text'; break;
 						default:
@@ -68,10 +72,14 @@ class Column {
 					break;
 				case 'length':
 					switch ($this->type) {
+						case 'tinyint':
 						case 'int':
 						case 'varchar':
 						case 'binary':
 							$this->length = intval($value);
+							break;
+						case 'set':
+							$this->length = $value;
 							break;
 						default:
 							trigger_error('Unimplemented length type: '.$this->type,E_USER_NOTICE);

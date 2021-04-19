@@ -150,7 +150,7 @@ abstract class Model implements \JsonSerializable {
 				$this->data[$name] = $value;
 			}
 		} else {
-			throw new Exception('Tried to set a non-existing property: '.$name);
+			throw new Exception('Tried to set a non-existing property: '.get_class($this).'->'.$name);
 		}
 	}
 	/**
@@ -360,6 +360,19 @@ abstract class Model implements \JsonSerializable {
 	 */
 	abstract protected function init();
 	/**
+	 * This will return a new instancement of the class using an array
+	 * as data origin for the class
+	 * @access public
+	 * @version 1.0.1
+	 * @param array $params data for the instancement
+	 * @return void
+	 */
+	static public function instanceFromArray($data) {
+		$return = new static();
+		$return->loadData($data);
+		return $return;
+	}
+	/**
 	 * This function is intended to return an array with objects
 	 * contaning a self class. Parameters allow filters to be applied
 	 * @access public
@@ -367,26 +380,19 @@ abstract class Model implements \JsonSerializable {
 	 * @param array $params Array containing the filters or parameters to filter the results
 	 * @return array
 	 */
-	public function list($params) {
+	public function list($params=array()) {
 		$sql = $this->getSql($params);
 		$sql .= $this->getSqlFilters($params);
 		$results = $this->nucoke->sql($sql);
 		$return = array();
-		if (is_object($results)) {
-			while ($result = $results->fetch_array(MYSQLI_ASSOC)) {
+		if (is_array($results)) {
+			foreach ($results as $result) {
 				if (is_array($params)&&isset($params['count'])&&$params['count']==true&&isset($result['total'])) {
 					return intval($result['total']);
 				}
-				try {
-					$json = json_encode($result,JSON_INVALID_UTF8_SUBSTITUTE|JSON_THROW_ON_ERROR);
-				} catch (JsonException $e) {
-					throw new Exception('Error on json_encode: '.$e->getCode().':'.$e->getMessage());
-				}
-				try {
-					$return[] = new static($json);
-				} catch (Exception $e) {
-					throw new Exception('Unable to load Object: '.$json);
-				}
+				$prepare =  new static();
+				$prepare->loadData($result);
+				$return[] = $prepare;
 			}
 		}
 		return $return;
@@ -424,7 +430,7 @@ abstract class Model implements \JsonSerializable {
 	 * @param string $data data to be processed
 	 * @return string processed data
 	 */
-	protected function loadData($data) {
+	public function loadData($data) {
 		if (is_array($data)) {
 			$result = $data;
 		} elseif (get_class($data)=='mysqli_result') {
