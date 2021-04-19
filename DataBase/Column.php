@@ -30,6 +30,7 @@ class Column {
 	private $null;
 	private $default;
 	private $comment;
+	private $collation;
 	private $autoincrement;
 	
 	public function __construct() {
@@ -40,6 +41,7 @@ class Column {
 		$this->null = true;
 		$this->default = '';
 		$this->comment = 'Default Comment';
+		$this->collation = 'utf8mb4_general_ci';
 		$this->autoincrement = false;
 	}
 
@@ -58,6 +60,8 @@ class Column {
 							$this->type = 'binary'; break;
 						case 'tinytext':
 							$this->type = 'tinytext'; break;
+						case 'text':
+							$this->type = 'text'; break;
 						default:
 							trigger_error('Unimplemented data type: '.$value,E_USER_NOTICE);
 					}
@@ -102,6 +106,9 @@ class Column {
 					break;
 				case 'autoincrement':
 					$this->autoincrement = $value;
+					break;
+				case 'collation':
+					$this->collation = $value;
 					break;
 				default:
 					trigger_error('Unimplemented propety '.$name,E_USER_NOTICE);
