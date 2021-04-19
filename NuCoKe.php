@@ -211,7 +211,6 @@ class NuCoKe {
 		return true;
 	}
 	/**
-<<<<<<< HEAD
 	 * Handles Exceptions
 	 * @access public
 	 * @version 1.0.1
@@ -220,7 +219,8 @@ class NuCoKe {
 	public function set_exception_handler($exception) {
 		var_dump($exception);
 		return true;
-=======
+	}
+	/*
 	 * will return the host to which the request was sent
 	 * @access public
 	 * @version 1.0.1
@@ -269,7 +269,6 @@ class NuCoKe {
 			}
 		}
 		return $port;
->>>>>>> b4f1120347f5a8ad31f9ab6b6b723cc6b9fabc40
 	}
 	/**
 	 * will decode a 16-byte binary ip into normal string
@@ -305,11 +304,7 @@ class NuCoKe {
 	 * @version 1.0.13
 	 * @return string remote address
 	 */
-<<<<<<< HEAD
-	public function ip_get() {
-=======
 	public static function ip_get() {
->>>>>>> b4f1120347f5a8ad31f9ab6b6b723cc6b9fabc40
 		$ip = '0000:0000:0000:0000:0000:0000:0000:0001';
 		if (php_sapi_name()=='cli') {
 			if (isset($_SERVER['SSH_CLIENT'])) {
@@ -321,11 +316,6 @@ class NuCoKe {
 				$ip = $_SERVER['REMOTE_ADDR'];
 			}
 		}
-<<<<<<< HEAD
-		return $ip;
-	}
-	/**
-=======
 		$ip = inet_pton($ip);
 		if (strlen($ip)<16&&strlen($ip)==4) {
 			$ip = str_repeat(chr(0), 10).str_repeat(chr(255), 2).$ip;
@@ -343,7 +333,6 @@ class NuCoKe {
 		return $this->path;
 	}
 	/**
->>>>>>> b4f1120347f5a8ad31f9ab6b6b723cc6b9fabc40
 	 * Will execute the $query on the specified $database or the default $database if not specified
 	 * @access public
 	 * @version 2.0.1
@@ -405,8 +394,6 @@ class NuCoKe {
 		$end = str_replace(chr(39),chr(92).chr(39),$end);
 		return $end;
 	}
-<<<<<<< HEAD
-=======
 	/**
 	 * will get the current url
 	 * @access public
@@ -495,5 +482,4 @@ class NuCoKe {
 
 		return $unparsed_url;
 	}
->>>>>>> b4f1120347f5a8ad31f9ab6b6b723cc6b9fabc40
 }
