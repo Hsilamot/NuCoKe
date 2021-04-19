@@ -24,6 +24,10 @@ namespace Tomalish;
 use \PDO as PDO;
 use \PDOException as PDOException;
 
+class QueryResult {
+
+}
+
 class Database {
 	/**
 	 * PDO Object
@@ -269,7 +273,7 @@ class Database {
 			return false;
 		}
 		try {
-			$result = $db->query($query);
+			$result = $db->query($query,PDO::FETCH_ASSOC);
 		} catch (Exception $e) {
 			trigger_error($call_string.$e->getMessage(),E_USER_NOTICE);
 			if (is_object($this->object)) {
@@ -291,23 +295,52 @@ class Database {
 			 && substr($query,0,6)!='DELETE'
 			) {
 				$return = array();
+				$column_type = array();
+				for ($i=0;$i<$result->columnCount();$i++) {
+					$type = $result->getColumnMeta($i);
+					$column_type[$i] = $type['native_type'];
+				}
 				foreach ($result as $rows) {
 					$row = array();
+					$i = 0;
 					foreach ($rows as $name => $value) {
-						if (!is_int($name)) {
-							$row[$name] = $value;
+						switch ($column_type[$i]) {
+							case 'LONG':
+								$row[$name] = intval($value);
+								break;
+							case 'VAR_STRING':
+							case 'STRING':
+							case 'DATETIME':
+							case 'BLOB':
+								$row[$name] = $value;
+								break;
+							default:
+								$row[$name] = $value;
+								trigger_error($call_string.'Unhandled column type '.var_export($column_type[$i],true),E_USER_NOTICE);
+								break;
 						}
+						$i++;
 					}
 					$return[] = $row;
 				}
 				return $return;
 			}
 			if (substr($query,0,6)=='INSERT') {
-				return $db->lastInsertId();
+				return $db->lastInsertId(); //we return the inserted ID
 			}
-			foreach ($query as $row) {
-				trigger_error($call_string.'Unknown rowtype?: '.var_export($row,true),E_USER_NOTICE);
+			if (substr($query,0,7)=='REPLACE') {
+				return $result->rowCount(); // we return the amount of affected rows
 			}
+			if (substr($query,0,6)=='UPDATE') {
+				return $result->rowCount(); // we return the amount of affected rows
+			}
+			if (substr($query,0,6)=='CREATE') {
+				return $result->rowCount(); // we return the amount of affected rows
+			}
+			if (substr($query,0,6)=='DELETE') {
+				return $result->rowCount(); // we return the amount of affected rows
+			}
+			trigger_error($call_string.' Unknown END: '.var_export($result,true),E_USER_NOTICE);
 			return false;
 		}
 		return false;

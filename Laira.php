@@ -64,15 +64,19 @@ class Laira {
 		$this->payload		= array();		/* Payload Contents */
 		return true;
 	}
-	public function msg($type='info',$msg='') {
+	public function addMessage($type='info',$msg='') {
 		$this->messages[] = array('type'=>$type,'message'=>$msg);
+		return true;
+	}
+	public function addPayload($name='',$content='') {
+		$this->payload[$name] = $content;
 		return true;
 	}
 	public function end($code=false,$msg=false,$return=false) {
 		/* PREFLIGHT CHECK */
 		header('Access-Control-Allow-Origin: *'); /* Dejamos que las solicitudes vengan de cualquier dominio */
 		header("Access-Control-Allow-Methods: POST, GET, DELETE, PUT, PATCH, OPTIONS"); /* Aceptamos los metodos */
-		header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With'); /* Permitimos cabeceras */
+		header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With, appid, version'); /* Permitimos cabeceras */
 		if ($code) {
 			$this->http_code = $code;
 		}
@@ -131,6 +135,7 @@ class Laira {
 			case 510: header($server_protocol.' 510 Not Extended'); break;
 			default:  header($server_protocol.' 500 Internal Server Error'); break;
 		}
+		header('Content-Type: application/json'); // Las respuestas se proporcionan en JSON
 		$payload = $this->payload;
 		$payload['messages'] = $this->messages;
 		$payload['result'] = $this->result;
@@ -144,8 +149,9 @@ class Laira {
 		} catch (JsonException $e) {
 			$msg = 'JSON Exception Message: '.$e->getMessage();
 			trigger_error($msg,E_USER_NOTICE);
+			trigger_error('Object tried to encode: '.print_r($payload,true),E_USER_NOTICE);
 			$this->result	= false;
-			$this->msg('error',$msg);
+			$this->addMessage('error',$msg);
 			$this->payload	= array();
 			$this->end();
 		}

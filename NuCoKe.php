@@ -21,6 +21,7 @@
  * @version 4.0.1
  */
 namespace Tomalish;
+use Tomalish\Database;
 
 class NuCoKe {
 	/**
@@ -93,6 +94,7 @@ class NuCoKe {
 	public function __construct($config=array()) {
 		/* we set the error handler */
 		set_error_handler(array($this, 'error_handler'));
+		set_exception_handler(array($this, 'exception_handler'));
 		error_reporting(-1);
 		/* we will now set the default configuration */
 		$this->start		= microtime(true);						/* time we started the class */
@@ -145,6 +147,28 @@ class NuCoKe {
 		return true;
 	}
 	/**
+	 * get remote address user agent if available
+	 * @access public
+	 * @version 1.0.2
+	 * @return string remote address
+	 */
+	public function agent_get() {
+		if (php_sapi_name()=='cli') {
+			$agent = '';
+			if (isset($_SERVER['USER'])) { $agent .= $_SERVER['USER'].'@'; } else { $agent .= 'unknown@'; }
+			if (isset($_SERVER['HOSTNAME'])) { $agent .= $_SERVER['HOSTNAME'].' ('; } else { $agent .= '::1 ('; }
+			if (isset($_SERVER['SSH_TTY'])) { $agent .= $_SERVER['SSH_TTY'].';'; } else { $agent .= 'unknowntty;'; }
+			if (isset($_SERVER['SSH_CONNECTION'])) { $agent .= $_SERVER['SSH_CONNECTION'].')'; } else { $agent .= 'unknown)'; }
+			return $agent;
+		} else {
+			if (isset($_SERVER['HTTP_USER_AGENT'])) {
+				return $_SERVER['HTTP_USER_AGENT'];
+			} else {
+				return 'unknown (unknown)';
+			}
+		}
+	}
+	/**
 	 * Adds a database to the database array
 	 * @access public
 	 * @version 2.0.1
@@ -177,12 +201,72 @@ class NuCoKe {
 			if (!is_dir($creation_path)) { mkdir($creation_path); }
 		}
 		$msg = $errfile.':'.$errline.'#'.$errno.' '.$errstr.chr(13).chr(10);
-		error_log($msg,3,$file);
+		if (!empty($file)) {
+			error_log($msg,3,$file);
+		}
 		if ($this->errorprint) {
 			echo $msg;
 			flush();
 		}
 		return true;
+	}
+	/**
+	 * Handles Exceptions
+	 * @access public
+	 * @version 1.0.1
+	 * @return bool return true if success
+	 */
+	public function set_exception_handler($exception) {
+		var_dump($exception);
+		return true;
+	}
+	/**
+	 * will decode a 16-byte binary ip into normal string
+	 * 2019-08-22 added IPv6 Compatible encoding
+	 * @access public
+	 * @version 1.1.44
+	 * @param binary $ip 4-byte IP
+	 * @return string return full decoded ip IPv6 format
+	 */
+	public static function ip_decode($ip) {
+		return inet_ntop($ip);
+	}
+	/**
+	 * will encode a string IP into a hexadecimal string
+	 * 2019-08-22 added IPv6 Compatible encoding
+	 * @access public
+	 * @version 1.1.86
+	 * @param string $ip normal x.x.x.x ip
+	 * @return string return 32x 0 to F hexadecimal string
+	 */
+	public static function ip_encode($ip) {
+		$pack = inet_pton($ip);
+		$pack = bin2hex($pack);
+		if (strlen($pack)==32) {
+			return '0x'.$pack;
+		} else {
+			return '0x'.str_pad('ffff'.$pack,32,'0',STR_PAD_LEFT);
+		}
+	}
+	/**
+	 * get remote address if available, localhost on fail
+	 * @access public
+	 * @version 1.0.13
+	 * @return string remote address
+	 */
+	public function ip_get() {
+		$ip = '0000:0000:0000:0000:0000:0000:0000:0001';
+		if (php_sapi_name()=='cli') {
+			if (isset($_SERVER['SSH_CLIENT'])) {
+				$ip = explode(' ',$_SERVER['SSH_CLIENT']);
+				$ip = $ip[0];
+			}
+		} else {
+			if (isset($_SERVER['REMOTE_ADDR'])) {
+				$ip = $_SERVER['REMOTE_ADDR'];
+			}
+		}
+		return $ip;
 	}
 	/**
 	 * Will execute the $query on the specified $database or the default $database if not specified
@@ -205,5 +289,45 @@ class NuCoKe {
 			}
 		}
 		return $database->query($query);
+	}
+	/**
+	 * will convert a decimal number to a hexadecimal representation for SQL insertion
+	 * @access public
+	 * @version 1.0.38
+	 * @param string $string representation of the string
+	 * @return string with hexadecimal representation
+	 */
+	public static function sql_dechex($value) {
+		if (strlen($value)>0) {
+			return '0x'.dechex(intval($value));
+		} else {
+			return 'NULL';
+		}
+	}
+	/**
+	 * will convert a text to a hexadecimal representation for SQL insertion
+	 * @access public
+	 * @version 1.0.2
+	 * @param string $string representation of the string
+	 * @return string with hexadecimal representation or null if empty
+	 */
+	public static function sql_texthex($string) {
+		if (strlen($string)>0) {
+			return '0x'.bin2hex($string);
+		} else {
+			return 'NULL';
+		}
+	}
+	/**
+	 * will kill anything that can destroy our precious SQL sentences
+	 * @access public
+	 * @version 1.0.5
+	 * @param string $string part of the query to vaccine
+	 * @return string with vaccioned string
+	 */
+	public static function sql_vaccine($string) {
+		$end = str_replace(chr(92).chr(39),chr(92).chr(92).chr(39),$string);
+		$end = str_replace(chr(39),chr(92).chr(39),$end);
+		return $end;
 	}
 }
