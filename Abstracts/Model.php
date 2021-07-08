@@ -40,12 +40,6 @@ abstract class Model implements \JsonSerializable {
 	 */
 	protected $nucoke;
 	/**
-	 * We store the array of the primary keys
-	 * @access private
-	 * @var array
-	 */
-	private $columns_primary=array();
-	/**
 	 * We will store the database records
 	 * @access private
 	 * @var array
@@ -96,7 +90,6 @@ abstract class Model implements \JsonSerializable {
 		$this->init($params);
 		$this->validStructure();
 
-		$this->columns_primary = array();
 		$this->data = array();
 		$this->data_original = array();
 		$this->isLoaded = false;
@@ -105,14 +98,15 @@ abstract class Model implements \JsonSerializable {
 			$this->data[$columnName] = null;
 			$this->data_original[$columnName] = null;
 		}
-	
 		if ($params!==null) {
 			if (is_string($params)&&substr($params,0,1)=='{'&&substr($params,-1)=='}') {
 				$this->loadData(json_decode($params));
 			} else {
 				$sql = $this->load($params);
 				$data = $this->nucoke->sql($sql);
-				if (count($data)==1) {
+				if (count($data)==0) {
+					throw new Exception('No data was found!');
+				} elseif (count($data)==1) {
 					$this->loadData($data[0]);
 				} else {
 					throw new Exception('More than one possible result to load!');
@@ -228,7 +222,7 @@ abstract class Model implements \JsonSerializable {
 		$condiciones = array();
 		foreach ($elements as $element) {
 			$wheres = array();
-			foreach ($this->columns_primary as $key) {
+			foreach ($this->table->primary_keys as $key) {
 				if ($element->{$key}===null) {
 					throw new Exception('Error on primary key \''.$key.'\' fetch from child!');
 				}
@@ -337,7 +331,7 @@ abstract class Model implements \JsonSerializable {
 	private function getSqlPrimary() {
 		$sql  = ' WHERE ';
 		$wheres = array();
-		foreach ($this->columns_primary as $key) {
+		foreach ($this->table->primary_keys as $key) {
 			if ($this->data_original[$key]===null) {
 				throw new Exception('Error on primary key \''.$key.'\' data should not be null');
 			}
@@ -408,10 +402,10 @@ abstract class Model implements \JsonSerializable {
 	 * @return string
 	 */
 	private function load($params) {
-		if (count($this->columns_primary)===1&&!is_array($params)) {
-			$params = array($this->columns_primary[0] => $params);
+		if (count($this->table->primary_keys)===1&&!is_array($params)) {
+			$params = array($this->table->primary_keys[0] => $params);
 		}
-		foreach ($this->columns_primary as $key) {
+		foreach ($this->table->primary_keys as $key) {
 			if (!isset($params[$key])) {
 				throw new Exception('Cannot execute load(), missing load parameter on column \''.$key.'\'');
 			}
@@ -523,34 +517,6 @@ abstract class Model implements \JsonSerializable {
 			}
 			# if $sets = 0 then we do nothing and call it a good work day!
 			return true; // another job well done.
-		}
-	}
-	/**
-	 * Sets the Database Structure
-	 * @access protected
-	 * @version 1.0.1
-	 * @param array Database Structure
-	 * @return void
-	 */
-	protected function setStructure($structure) {
-		$this->columns = array();
-		$this->columns_primary = array();
-		if (!isset($structure['columns'])) {
-			throw new Exception('a columns definition is required on the structure');
-		}
-		if (!isset($structure['table'])) {
-			throw new Exception('a table name is required on the structure');
-		}
-		$this->table = $structure['table'];
-		if (isset($structure['column_inactive'])) {
-			$this->column_inactive = $structure['column_inactive'];
-		}
-		foreach ($structure['columns'] as $line => $column) {
-			if (!isset($column['name'])) { throw new Exception('Line #'.$line.' a column \'name\' is required'); }
-			$this->columns[] = $column['name'];
-			if (isset($column['isPrimary'])&&$column['isPrimary']==true) {
-				$this->columns_primary[] = $column['name'];
-			}
 		}
 	}
 	/**
