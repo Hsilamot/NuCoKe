@@ -24,10 +24,6 @@ namespace Tomalish;
 use \PDO as PDO;
 use \PDOException as PDOException;
 
-class QueryResult {
-
-}
-
 class Database {
 	/**
 	 * PDO Object
@@ -212,7 +208,8 @@ class Database {
 		if (strlen($this->database)>0) {
 			$dsn .= 'dbname='.$this->database.';';
 		}
-		$options = array(PDO::ATTR_PERSISTENT => $this->persistent);
+		$options = array(PDO::ATTR_PERSISTENT => $this->persistent,
+						PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
 		try {
 			$this->connected = true;
 			$this->object = new PDO($dsn,$this->user,$this->pass,$options);
@@ -274,6 +271,8 @@ class Database {
 		}
 		try {
 			$result = $db->query($query,PDO::FETCH_ASSOC);
+		} catch (PDOException $e) {
+			trigger_error($call_string.$e->getMessage(),E_USER_NOTICE);
 		} catch (Exception $e) {
 			trigger_error($call_string.$e->getMessage(),E_USER_NOTICE);
 			if (is_object($this->object)) {
@@ -306,7 +305,12 @@ class Database {
 					foreach ($rows as $name => $value) {
 						switch ($column_type[$i]) {
 							case 'LONG':
-								$row[$name] = intval($value);
+							case 'TINY':
+								if ($value!==NULL) {
+									$row[$name] = intval($value);
+								} else {
+									$row[$name] = NULL;
+								}
 								break;
 							case 'VAR_STRING':
 							case 'STRING':
@@ -342,6 +346,8 @@ class Database {
 			}
 			trigger_error($call_string.' Unknown END: '.var_export($result,true),E_USER_NOTICE);
 			return false;
+		} else {
+
 		}
 		return false;
 	}

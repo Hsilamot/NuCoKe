@@ -151,7 +151,7 @@ class NuCoKe {
 	 * @version 1.0.2
 	 * @return string remote address
 	 */
-	public function agent_get() {
+	public static function agent_get() {
 		if (php_sapi_name()=='cli') {
 			$agent = '';
 			if (isset($_SERVER['USER'])) { $agent .= $_SERVER['USER'].'@'; } else { $agent .= 'unknown@'; }
@@ -278,6 +278,11 @@ class NuCoKe {
 	 */
 	public static function ip_encode($ip) {
 		$pack = inet_pton($ip);
+		if (strlen($pack)<16&&strlen($pack)==4) {
+			$pack = str_repeat(chr(0), 10).str_repeat(chr(255), 2).$pack;
+		}
+		return $pack;
+		// código viejo
 		$pack = bin2hex($pack);
 		if (strlen($pack)==32) {
 			return '0x'.$pack;
@@ -303,12 +308,40 @@ class NuCoKe {
 				$ip = $_SERVER['REMOTE_ADDR'];
 			}
 		}
-		$ip = inet_pton($ip);
-		if (strlen($ip)<16&&strlen($ip)==4) {
-			$ip = str_repeat(chr(0), 10).str_repeat(chr(255), 2).$ip;
-		}
-		$ip = inet_ntop($ip);
+		$ip = inet_ntop(NuCoKe::ip_encode($ip));
 		return $ip;
+	}
+	/**
+	 * returns the request method
+	 * @access public
+	 * @version 1.0.1
+	 * @return string with the request method
+	 */
+	public static function method_get() {
+		$method = 'GET';
+		$method_check = $method;
+		if (php_sapi_name()=='cli') {
+			if (isset($_SERVER['argv'])&&count($_SERVER['argv'])>1) {
+				$method_check = $_SERVER['argv'][1];
+			}
+		} else {
+			if (isset($_SERVER['REQUEST_METHOD'])) {
+				$method_check = $_SERVER['REQUEST_METHOD'];
+			}
+		}
+		switch (strtoupper($method_check)) {
+			case     'GET': $method = 'GET'; break;
+			case    'HEAD': $method = 'HEAD'; break;
+			case    'POST': $method = 'POST'; break;
+			case     'PUT': $method = 'PUT'; break;
+			case  'DELETE': $method = 'DELETE'; break;
+			case 'CONNECT': $method = 'CONNECT'; break;
+			case 'OPTIONS': $method = 'OPTIONS'; break;
+			case   'TRACE': $method = 'TRACE'; break;
+			case    'PATH': $method = 'PATH'; break;
+			default: $method = 'GET'; break;
+		}
+		return $method;
 	}
 	/**
 	 * return the working dir path
